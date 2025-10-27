@@ -6,6 +6,7 @@
 import os
 import re
 import sys
+from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -14,10 +15,11 @@ from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
-from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
+
 
 # 设置控制台编码为 UTF-8（修复 Windows 下的编码问题）
 if sys.platform.startswith('win'):
@@ -235,7 +237,8 @@ def load_financial_pdf(pdf_path: str) -> str:
     try:
         # 使用 PyMuPDF 加载PDF（对中文支持更好）
         print("📂 正在加载PDF文件...")
-        loader = PyMuPDFLoader(pdf_path)
+        # load_fn = PyMuPDFLoader if is_online else OnlinePDFLoader
+        loader = PyPDFLoader(pdf_path)
         documents = loader.load()
         print(f"✓ 已加载 {len(documents)} 页")
         
@@ -525,41 +528,41 @@ def main():
     print("基于 LangChain 和 DeepSeek")
     print("="*60)
     
-    # 创建 agent
-    agent, system_message = create_financial_agent()
+    # # 创建 agent
+    # agent, system_message = create_financial_agent()
     
-    # 测试对话
-    test_queries = [
-        "你好，请介绍一下你能做什么？",
-        "假设一家公司的营业收入是1000万，净利润是150万，总资产是2000万，请帮我分析它的盈利能力。",
-        "这家公司的流动资产是500万，流动负债是300万，现金是100万，存货是150万，请分析流动性。",
-    ]
+    # # 测试对话
+    # test_queries = [
+    #     "你好，请介绍一下你能做什么？",
+    #     "假设一家公司的营业收入是1000万，净利润是150万，总资产是2000万，请帮我分析它的盈利能力。",
+    #     "这家公司的流动资产是500万，流动负债是300万，现金是100万，存货是150万，请分析流动性。",
+    # ]
     
-    thread_id = "financial_analysis_session"
-    config = {"configurable": {"thread_id": thread_id}}
+    # thread_id = "financial_analysis_session"
+    # config = {"configurable": {"thread_id": thread_id}}
     
-    for i, query in enumerate(test_queries, 1):
-        print(f"\n{'='*60}")
-        print(f"📝 问题 {i}: {query}")
-        print(f"{'='*60}\n")
+    # for i, query in enumerate(test_queries, 1):
+    #     print(f"\n{'='*60}")
+    #     print(f"📝 问题 {i}: {query}")
+    #     print(f"{'='*60}\n")
         
-        # 第一次对话时包含系统消息
-        if i == 1:
-            messages = [system_message, HumanMessage(content=query)]
-        else:
-            messages = [HumanMessage(content=query)]
+    #     # 第一次对话时包含系统消息
+    #     if i == 1:
+    #         messages = [system_message, HumanMessage(content=query)]
+    #     else:
+    #         messages = [HumanMessage(content=query)]
         
-        result = agent.invoke(
-            {"messages": messages},
-            config=config
-        )
+    #     result = agent.invoke(
+    #         {"messages": messages},
+    #         config=config
+    #     )
         
-        # 显示回复
-        last_message = result['messages'][-1]
-        print(f"🤖 AI: {last_message.content}\n")
+    #     # 显示回复
+    #     last_message = result['messages'][-1]
+    #     print(f"🤖 AI: {last_message.content}\n")
 
 
-def main_with_pdf():
+def main_with_pdf(code: str):
     """运行带PDF分析的示例"""
     print("="*60)
     print("🏢 财务报表PDF分析示例")
@@ -569,7 +572,7 @@ def main_with_pdf():
     agent, system_message = create_financial_agent()
     
     # PDF文件路径
-    pdf_path = "./600006_20250830_WOQW.pdf"
+    # pdf_path = "./603259_20250729_Z1D5.pdf"
     
     # 测试查询
     test_queries = [
