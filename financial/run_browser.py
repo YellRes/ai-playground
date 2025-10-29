@@ -33,11 +33,11 @@ def run_browser(searchWord):
                 # page.wait_for_load_state('networkidle')
 
                 # 等待至少一个链接元素出现
-                _ = page.wait_for_selector(".table-responsive a")
+                _ = page.wait_for_selector(".table-responsive")
                 
                 # 方法2：使用 locator().all()（推荐）
                 print("\n方法2：使用 locator().all() 获取所有链接")
-                all_links_locator = page.locator(".table-responsive a")
+                all_links_locator = page.locator(".table-responsive a.table_titlewrap")
                 all_links_count = all_links_locator.count()
 
                 
@@ -51,6 +51,7 @@ def run_browser(searchWord):
                     })
                     print(f"链接 {i + 1}: {text}")
                     print(f"链接地址: {href}\n")
+
       
                 return res
             

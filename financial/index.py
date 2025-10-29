@@ -15,7 +15,7 @@ from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -238,7 +238,7 @@ def load_financial_pdf(pdf_path: str) -> str:
         # 使用 PyMuPDF 加载PDF（对中文支持更好）
         print("📂 正在加载PDF文件...")
         # load_fn = PyMuPDFLoader if is_online else OnlinePDFLoader
-        loader = PyPDFLoader(pdf_path)
+        loader = PyMuPDFLoader(pdf_path)
         documents = loader.load()
         print(f"✓ 已加载 {len(documents)} 页")
         
