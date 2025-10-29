@@ -1,0 +1,75 @@
+from playwright.sync_api import sync_playwright
+
+def run_browser(searchWord):
+    res = []
+    with sync_playwright() as p:
+        # 启动浏览器
+        browser = p.chromium.launch(headless=False)  # headless=False 表示可以看到浏览器界面
+        
+        # 创建新页面
+        page = browser.new_page()
+        
+        try:
+            response = page.goto('https://www.sse.com.cn/disclosure/listedinfo/regular/')
+            if response is not None:
+                print(f"页面加载状态码: {response.status}")
+            
+            # 等待页面加载
+            page.wait_for_load_state('networkidle')
+            
+             # 等待 li 中 class=top_side_show_items 中 textcontent = 披露的元素出现
+            search_input = page.wait_for_selector(".sse_searchInput > input")
+            if search_input:
+                 # 清空并输入内容
+                search_input.fill('')  # 清空搜索框
+                search_input.fill(searchWord)  # delay参数模拟人工输入的速度
+                
+                # 方法1：使用 locator（推荐）
+                search_button = page.locator('span.search_btn.bi-search')
+                search_button.click()
+                print("点击搜索按钮成功")
+                
+                # 等待搜索结果加载
+                # page.wait_for_load_state('networkidle')
+
+                # 等待至少一个链接元素出现
+                _ = page.wait_for_selector(".table-responsive a")
+                
+                # 方法2：使用 locator().all()（推荐）
+                print("\n方法2：使用 locator().all() 获取所有链接")
+                all_links_locator = page.locator(".table-responsive a")
+                all_links_count = all_links_locator.count()
+
+                
+                for i in range(all_links_count):
+                    link = all_links_locator.nth(i)
+                    text = link.inner_text()
+                    href = link.get_attribute('href')
+                    res.append({
+                        'name': text,
+                        'url': f"https://static.sse.com.cn{href}"
+                    })
+                    print(f"链接 {i + 1}: {text}")
+                    print(f"链接地址: {href}\n")
+      
+                return res
+            
+        except Exception as e:
+            print(f"发生错误: {e}")
+            
+        # # 保持浏览器打开状态
+        # import signal
+        # from types import FrameType
+        
+        # def signal_handler(_sig: int, _frame: FrameType | None) -> None:
+        #     print("\n正在关闭浏览器...")
+        #     browser.close()
+        #     exit(0)
+        
+        # _ = signal.signal(signal.SIGINT, signal_handler)
+        # print("浏览器将保持打开状态。按 Ctrl+C 可以关闭浏览器。")
+        # # 保持脚本运行
+        # signal.pause()
+
+if __name__ == "__main__":
+    run_browser('')
