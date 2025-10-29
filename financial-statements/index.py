@@ -78,7 +78,7 @@ def calculate_financial_ratio(metric: str, numerator: float, denominator: float)
 
 
 @tool
-def analyze_profitability(revenue: float, net_income: float, total_assets: float) -> str:
+def analyze_profitability(revenue: float, net_income: float, total_assets: float, operating_income: float) -> str:
     """
     分析企业盈利能力
     
@@ -86,6 +86,7 @@ def analyze_profitability(revenue: float, net_income: float, total_assets: float
         revenue: 营业收入
         net_income: 净利润
         total_assets: 总资产
+        operating_income: 扣除非经常性损益的净利润
     
     Returns:
         盈利能力分析报告
@@ -95,11 +96,12 @@ def analyze_profitability(revenue: float, net_income: float, total_assets: float
     
     profit_margin = (net_income / revenue) * 100
     roa = (net_income / total_assets) * 100
-    
+    operating_profit_margin = (operating_income / revenue) * 100
     analysis = f"""
 📊 盈利能力分析报告：
 - 利润率: {profit_margin:.2f}%
 - 总资产收益率(ROA): {roa:.2f}%
+- 扣除非经常性损益的净利润率: {operating_profit_margin:.2f}%
 
 💡 分析结论：
 """
@@ -118,7 +120,7 @@ def analyze_profitability(revenue: float, net_income: float, total_assets: float
     else:
         analysis += "- 资产使用效率较低，需要优化资产配置\n"
     
-    return analysis
+    return analysis + "扣除非经常性损益的净利润率: {operating_profit_margin:.2f}%"
 
 
 @tool
@@ -306,7 +308,7 @@ def search_financial_info(query: str) -> str:
     从已加载的财务报表PDF中检索相关信息
     
     Args:
-        query: 要查询的财务信息（如"营业收入"、"净利润"、"资产负债表"等）
+        query: 要查询的财务信息（如"营业收入"、"净利润"、"资产负债表"、"扣除非经常性损益的净利润"等）
     
     Returns:
         检索到的相关信息
@@ -349,6 +351,7 @@ def extract_financial_data(data_type: str) -> str:
             - 'current_assets': 流动资产
             - 'current_liabilities': 流动负债
             - 'cash': 现金及现金等价物
+            - 'operating_income': 扣除非经常性损益的净利润
             - 'all': 提取所有关键财务指标
     
     Returns:
@@ -393,6 +396,10 @@ def extract_financial_data(data_type: str) -> str:
             r'货币资金[：:]\s*([\d,，.]+)',
             r'现金及现金等价物[：:]\s*([\d,，.]+)',
         ],
+        'operating_income': [
+            r'扣除非经常性损益的净利润[：:]\s*([\d,，.]+)',
+            r'非经常性损益净利润[：:]\s*([\d,，.]+)',
+        ],
     }
     
     def extract_number(text, pattern_list):
@@ -420,6 +427,7 @@ def extract_financial_data(data_type: str) -> str:
             'current_assets': '流动资产',
             'current_liabilities': '流动负债',
             'cash': '货币资金',
+            'operating_income': '扣除非经常性损益的净利润',
         }
         
         for key, name in data_names.items():
@@ -441,6 +449,7 @@ def extract_financial_data(data_type: str) -> str:
                 'current_assets': '流动资产',
                 'current_liabilities': '流动负债',
                 'cash': '货币资金',
+                'operating_income': '扣除非经常性损益的净利润',
             }
             return f"{data_names[data_type]}: {value:,.2f}"
         else:
@@ -500,17 +509,17 @@ def create_financial_agent():
 
 工作流程：
 1. 当用户提供PDF文件路径时，首先使用 load_financial_pdf 加载文件
-2. 使用 extract_financial_data 提取关键财务数据
-3. 根据提取的数据，使用分析工具进行深入分析
-4. 提供专业的分析报告和建议
+2. 仅当用户明确要求时，才使用 extract_financial_data 提取数据或使用分析工具
+3. 完成用户要求的具体任务后，立即给出结论，不要进行额外的分析
 
-在回答问题时，请：
-- 使用提供的工具进行准确计算
-- 提供清晰的分析和解释
-- 给出专业的建议和结论
+⚠️ 重要规则：
+- 只执行用户明确要求的任务
+- 如果用户只要求"加载PDF"，加载完成后就停止，不要自动分析
+- 如果用户只要求"提取数据"，提取完成后就停止
+- 避免过度使用工具，每个任务只调用必要的工具
 - 使用中文回答
 
-如果用户提供了财务数据或PDF文件，请主动使用相应的工具进行分析。""")
+如果用户提供了财务数据或PDF文件，请根据用户的具体要求使用相应的工具。""")
     
     # 创建 ReAct agent
     agent = create_react_agent(llm, tools, checkpointer=memory)
@@ -536,7 +545,10 @@ def main():
     ]
     
     thread_id = "financial_analysis_session"
-    config = {"configurable": {"thread_id": thread_id}}
+    config = {
+        "configurable": {"thread_id": thread_id},
+        "recursion_limit": 50  # 增加递归限制
+    }
     
     for i, query in enumerate(test_queries, 1):
         print(f"\n{'='*60}")
@@ -569,17 +581,20 @@ def main_with_pdf():
     agent, system_message = create_financial_agent()
     
     # PDF文件路径
-    pdf_path = "./600006_20250830_WOQW.pdf"
+    pdf_path = "./603899_20250828_YMYG.pdf"
     
-    # 测试查询
+    # 测试查询（拆分为更简单的步骤，避免过度工具调用）
     test_queries = [
-        f"请加载并分析这个PDF文件：{pdf_path}",
-        "从PDF中提取所有关键财务数据",
-        "基于提取的数据，分析这家公司的整体财务状况",
+        f"请加载这个PDF文件：{pdf_path}",  # 只要求加载
+        "从PDF中提取所有关键财务数据",      # 只要求提取
+        "基于提取的数据，分析这家公司的整体财务状况",  # 要求分析
     ]
     
     thread_id = "pdf_analysis_session"
-    config = {"configurable": {"thread_id": thread_id}}
+    config = {
+        "configurable": {"thread_id": thread_id},
+        "recursion_limit": 50  # 增加递归限制
+    }
     
     for i, query in enumerate(test_queries, 1):
         print(f"\n{'='*60}")
@@ -617,7 +632,10 @@ def main_interactive():
     
     # 对话会话 ID
     thread_id = "interactive_financial_session"
-    config = {"configurable": {"thread_id": thread_id}}
+    config = {
+        "configurable": {"thread_id": thread_id},
+        "recursion_limit": 50  # 增加递归限制
+    }
     
     # 标记是否是第一次对话
     is_first_message = True
@@ -638,7 +656,10 @@ def main_interactive():
             # 清除历史命令
             if user_input.lower() in ['clear', '清除']:
                 thread_id = f"financial_session_{os.urandom(4).hex()}"
-                config = {"configurable": {"thread_id": thread_id}}
+                config = {
+                    "configurable": {"thread_id": thread_id},
+                    "recursion_limit": 500  # 增加递归限制
+                }
                 is_first_message = True
                 print("\n✨ 对话历史已清除\n")
                 continue
