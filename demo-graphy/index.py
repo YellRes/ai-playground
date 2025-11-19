@@ -63,8 +63,3 @@ print(result)
 
 print("\n" + "="*50 + "\n")
 
-# 方法2: 流式输出，查看每个节点的状态变化
-# print("=== 流式输出每个节点的状态 ===")
-# for step in graph.stream({"graph_state": "Hi, this is Lance."}):
-#     print(f"\n当前节点: {list(step.keys())[0]}")
-#     print(f"状态内容: {step}")

@@ -12,7 +12,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 # 设置环境变量（如果需要使用Agent）
 # os.environ["DEEPSEEK_API_KEY"] = "your-api-key-here"
 
-os.environ["DEEPSEEK_API_KEY"] = "sk-915b0213517e462b838b932e5e28b272"
+os.environ["DEEPSEEK_API_KEY"] = "sk-caef8df98d8f4cdca1f18d8c8e9f1a02"
 
 @tool
 def get_hackernews_top_stories(num_stories: int = 10) -> str:
@@ -90,7 +90,7 @@ def summarize_url_content(url: str) -> str:
         content = docs[0].page_content
         
         # 如果内容太长，截取前3000个字符
-        max_length = 3000
+        max_length = 5000
         if len(content) > max_length:
             content = content[:max_length] + "..."
         
