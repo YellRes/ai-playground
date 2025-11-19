@@ -4,7 +4,7 @@ def run_browser(searchWord):
     res = []
     with sync_playwright() as p:
         # 启动浏览器
-        browser = p.chromium.launch(headless=False)  # headless=False 表示可以看到浏览器界面
+        browser = p.chromium.launch(headless=False, timeout=400000)  # headless=False 表示可以看到浏览器界面
         
         # 创建新页面
         page = browser.new_page()
@@ -16,6 +16,17 @@ def run_browser(searchWord):
             
             # 等待页面加载
             page.wait_for_load_state('networkidle')
+            page.wait_for_timeout(2000)  # 等待2秒，确保页面完全加载
+            loading_locator = page.locator(".loading")
+            # 等待 loading 元素隐藏（更可靠且 API 友好）
+            # 使用 locator.wait_for(state='hidden') 可以直接等待元素变为隐藏状态，
+            # 避免向 page.wait_for_function 传递 element handle 导致参数错误。
+            try:
+                loading_locator.wait_for(state="hidden", timeout=10000)
+            except Exception:
+                # 作为后备，使用全局 JS 表达式检测样式隐藏
+                page.wait_for_function("() => document.querySelector('.loading')?.getAttribute('style') === 'display: none;'")
+
             
              # 等待 li 中 class=top_side_show_items 中 textcontent = 披露的元素出现
             search_input = page.wait_for_selector(".sse_searchInput > input")
@@ -33,6 +44,7 @@ def run_browser(searchWord):
                 # page.wait_for_load_state('networkidle')
 
                 # 等待至少一个链接元素出现
+                page.wait_for_timeout(2000)
                 _ = page.wait_for_selector(".table-responsive")
                 
                 # 方法2：使用 locator().all()（推荐）
@@ -46,7 +58,7 @@ def run_browser(searchWord):
                     text = link.inner_text()
                     href = link.get_attribute('href')
                     res.append({
-                        'name': text,
+                        'name': f"{searchWord}{text}",
                         'url': f"https://static.sse.com.cn{href}"
                     })
                     print(f"链接 {i + 1}: {text}")

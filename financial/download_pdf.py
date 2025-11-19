@@ -1,14 +1,17 @@
 import requests
-
-
-cookie_string = "gdp_user_id=gioenc-c928289g%2C91db%2C5gea%2Ca297%2C46cga34e8dc1; ba17301551dcbaf9_gdp_session_id=5dc308e0-857c-4db8-92bc-c8f1cc7c167c; ba17301551dcbaf9_gdp_session_id_sent=5dc308e0-857c-4db8-92bc-c8f1cc7c167c; ba17301551dcbaf9_gdp_sequence_ids={%22globalKey%22:90%2C%22VISIT%22:6%2C%22PAGE%22:12%2C%22VIEW_CLICK%22:56%2C%22CUSTOM%22:14%2C%22VIEW_CHANGE%22:6}; acw_tc=df6d3fab17616578018691111e356b958d23906e2a97ac689840462b96; cdn_sec_tc=df6d3fab17616578018691111e356b958d23906e2a97ac689840462b96; acw_sc__v2=6900c3c97841398cb5ecfa8b519600d097d0e83c"
-
-# 将字符串拆分成键值对
-parsed_cookies = {}
-for cookie_pair in cookie_string.split(';'):
-    if '=' in cookie_pair:
-        name, value = cookie_pair.strip().split('=', 1)
-        parsed_cookies[name] = value
+import time
+import json
+# from download_pdf_playwright import store_cookie
+# 从 cookie.json 文件加载 cookies
+def load_cookies_from_file(file_path):
+    with open(file_path, "r", encoding='utf-8') as f:
+        cookies_list = json.load(f)
+    
+    cookies_dict = {}
+    for cookie in cookies_list:
+        cookies_dict[cookie['name']] = cookie['value']
+    
+    return cookies_dict
 
 # 1. 定义请求头
 custom_headers = {
@@ -30,13 +33,10 @@ def download_pdf(url, filename):
     filename (str): 保存到本地的文件名（例如 'document.pdf'）
     """
     try:
+        # store_cookie('https://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2025-10-29/600281_20251029_4ZJS.pdf', 'info.pdf')
         # 发送 GET 请求
+        parsed_cookies = load_cookies_from_file("./cookie.json")
         response = requests.get(url, headers=custom_headers, cookies=parsed_cookies)
-        
-        # 检查请求是否成功
-        response.raise_for_status()
-        
-        print(response.content)
         # 以二进制写模式打开文件
         with open(f"./pdf/{filename}", 'wb') as file:
             # 分块写入，避免大文件占用过多内存

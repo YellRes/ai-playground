@@ -18,7 +18,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 
 # 设置控制台编码为 UTF-8（修复 Windows 下的编码问题）
@@ -88,7 +88,7 @@ def analyze_profitability(revenue: float, net_income: float, total_assets: float
         revenue: 营业收入
         net_income: 净利润
         total_assets: 总资产
-        operating_income: 扣除非经常性损益的净利润
+        operating_income: 归属于上市公司股东的扣除非经常性损益的净利润
     
     Returns:
         盈利能力分析报告
@@ -103,7 +103,7 @@ def analyze_profitability(revenue: float, net_income: float, total_assets: float
 📊 盈利能力分析报告：
 - 利润率: {profit_margin:.2f}%
 - 总资产收益率(ROA): {roa:.2f}%
-- 扣除非经常性损益的净利润率: {operating_profit_margin:.2f}%
+- 归属于上市公司股东的扣除非经常性损益的净利润率: {operating_profit_margin:.2f}%
 
 💡 分析结论：
 """
@@ -122,7 +122,7 @@ def analyze_profitability(revenue: float, net_income: float, total_assets: float
     else:
         analysis += "- 资产使用效率较低，需要优化资产配置\n"
     
-    return analysis + "扣除非经常性损益的净利润率: {operating_profit_margin:.2f}%"
+    return analysis + "归属于上市公司股东的扣除非经常性损益的净利润率: {operating_profit_margin:.2f}%"
 
 
 @tool
@@ -311,7 +311,7 @@ def search_financial_info(query: str) -> str:
     从已加载的财务报表PDF中检索相关信息
     
     Args:
-        query: 要查询的财务信息（如"营业收入"、"净利润"、"资产负债表"、"扣除非经常性损益的净利润"等）
+        query: 要查询的财务信息（如"营业收入"、"净利润"、"资产负债表"、"归属于上市公司股东的扣除非经常性损益的净利润"等）
     
     Returns:
         检索到的相关信息
@@ -354,7 +354,7 @@ def extract_financial_data(data_type: str) -> str:
             - 'current_assets': 流动资产
             - 'current_liabilities': 流动负债
             - 'cash': 现金及现金等价物
-            - 'operating_income': 扣除非经常性损益的净利润
+            - 'operating_income': 归属于上市公司股东的扣除非经常性损益的净利润
             - 'all': 提取所有关键财务指标
     
     Returns:
@@ -400,7 +400,7 @@ def extract_financial_data(data_type: str) -> str:
             r'现金及现金等价物[：:]\s*([\d,，.]+)',
         ],
         'operating_income': [
-            r'扣除非经常性损益的净利润[：:]\s*([\d,，.]+)',
+            r'归属于上市公司股东的扣除非经常性损益的净利润[：:]\s*([\d,，.]+)',
             r'非经常性损益净利润[：:]\s*([\d,，.]+)',
         ],
     }
@@ -422,6 +422,7 @@ def extract_financial_data(data_type: str) -> str:
         # 提取所有指标
         result = "📊 提取的财务数据：\n\n"
         data_names = {
+            'operating_income': '归属于上市公司股东的扣除非经常性损益的净利润',
             'revenue': '营业收入',
             'net_income': '净利润',
             'total_assets': '总资产',
@@ -430,7 +431,6 @@ def extract_financial_data(data_type: str) -> str:
             'current_assets': '流动资产',
             'current_liabilities': '流动负债',
             'cash': '货币资金',
-            'operating_income': '扣除非经常性损益的净利润',
         }
         
         for key, name in data_names.items():
@@ -444,6 +444,7 @@ def extract_financial_data(data_type: str) -> str:
         value = extract_number(pdf_content, patterns[data_type])
         if value:
             data_names = {
+                'operating_income': '归属于上市公司股东的扣除非经常性损益的净利润',
                 'revenue': '营业收入',
                 'net_income': '净利润',
                 'total_assets': '总资产',
@@ -452,7 +453,6 @@ def extract_financial_data(data_type: str) -> str:
                 'current_assets': '流动资产',
                 'current_liabilities': '流动负债',
                 'cash': '货币资金',
-                'operating_income': '扣除非经常性损益的净利润',
             }
             return f"{data_names[data_type]}: {value:,.2f}"
         else:
@@ -500,6 +500,7 @@ def create_financial_agent():
 5. 评估企业的流动性和偿债能力
 6. 分析企业的杠杆和资本结构
 7. 提供专业的财务建议
+8. 提供真实客观的分析，不能故意说好话
 
 可用工具说明：
 - load_financial_pdf: 加载PDF财务报表文件
@@ -596,7 +597,7 @@ def main_with_pdf(code: str):
     thread_id = "pdf_analysis_session"
     config = {
         "configurable": {"thread_id": thread_id},
-        "recursion_limit": 50  # 增加递归限制
+        "recursion_limit": 100000  # 增加递归限制
     }
     
     for i, query in enumerate(test_queries, 1):
