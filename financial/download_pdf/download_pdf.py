@@ -1,7 +1,6 @@
 import requests
 import time
 import json
-# from download_pdf_playwright import store_cookie
 # 从 cookie.json 文件加载 cookies
 def load_cookies_from_file(file_path):
     with open(file_path, "r", encoding='utf-8') as f:
@@ -33,12 +32,11 @@ def download_pdf(url, filename):
     filename (str): 保存到本地的文件名（例如 'document.pdf'）
     """
     try:
-        # store_cookie('https://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2025-10-29/600281_20251029_4ZJS.pdf', 'info.pdf')
         # 发送 GET 请求
         parsed_cookies = load_cookies_from_file("./cookie.json")
         response = requests.get(url, headers=custom_headers, cookies=parsed_cookies)
         # 以二进制写模式打开文件
-        with open(f"./pdf/{filename}", 'wb') as file:
+        with open(f"../pdf/{filename}", 'wb') as file:
             # 分块写入，避免大文件占用过多内存
             # for chunk in response.iter_content(chunk_size=8192):
             file.write(response.content)
@@ -47,9 +45,3 @@ def download_pdf(url, filename):
         
     except requests.exceptions.RequestException as e:
         print(f"下载失败: {e}")
-
-# 使用示例
-# pdf_url = "https://example.com/path/to/document.pdf"  # 替换为实际的 PDF 链接
-# save_filename = "downloaded_document.pdf"             # 本地保存的文件名
-
-# download_pdf('https://static.sse.com.cn/disclosure/listedinfo/announcement/c/new/2025-10-29/600281_20251029_4ZJS.pdf', 'info.pdf')

@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 from download_pdf import download_pdf
 import json
-def store_cookie(url, filename):
+def auth_download(url, filename):
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)  # 可设为 True
@@ -15,7 +15,6 @@ def store_cookie(url, filename):
                     print(context.cookies(), 'context.cookies()')
                     json.dump(context.cookies(), f, ensure_ascii=False, indent=4)
                 download_pdf(url, filename)
-
 
         # 注册响应监听器
         page.on("response", handle_response)
