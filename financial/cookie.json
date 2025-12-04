@@ -1,0 +1,32 @@
+[
+    {
+        "name": "acw_tc",
+        "value": "df6fe62517646817751302912e1bd815d3592751a3d2cb67b0f90af439",
+        "domain": "static.sse.com.cn",
+        "path": "/",
+        "expires": 1764685373.030032,
+        "httpOnly": true,
+        "secure": false,
+        "sameSite": "Lax"
+    },
+    {
+        "name": "cdn_sec_tc",
+        "value": "df6fe62517646817751302912e1bd815d3592751a3d2cb67b0f90af439",
+        "domain": "static.sse.com.cn",
+        "path": "/",
+        "expires": 1764685373.030112,
+        "httpOnly": true,
+        "secure": false,
+        "sameSite": "Lax"
+    },
+    {
+        "name": "acw_sc__v2",
+        "value": "692ee82fd18e4b0c66e4f527983c0c443e8dde5c",
+        "domain": ".sse.com.cn",
+        "path": "/",
+        "expires": 1764685373.047097,
+        "httpOnly": false,
+        "secure": false,
+        "sameSite": "Lax"
+    }
+]

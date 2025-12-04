@@ -36,7 +36,7 @@ def download_pdf(url, filename):
         parsed_cookies = load_cookies_from_file("./cookie.json")
         response = requests.get(url, headers=custom_headers, cookies=parsed_cookies)
         # 以二进制写模式打开文件
-        with open(f"../pdf/{filename}", 'wb') as file:
+        with open(f"../pdf/{filename}.pdf", 'wb') as file:
             # 分块写入，避免大文件占用过多内存
             # for chunk in response.iter_content(chunk_size=8192):
             file.write(response.content)

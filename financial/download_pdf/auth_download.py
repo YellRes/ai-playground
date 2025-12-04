@@ -1,5 +1,5 @@
 from playwright.sync_api import sync_playwright
-from download_pdf import download_pdf
+from .download_pdf import download_pdf
 import json
 def auth_download(url, filename):
 

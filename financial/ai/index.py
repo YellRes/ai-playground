@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Generator
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
@@ -575,8 +575,8 @@ def main():
     #     print(f"🤖 AI: {last_message.content}\n")
 
 
-def main_with_pdf(code: str):
-    """运行带PDF分析的示例"""
+def main_with_pdf(pdf_path: str) -> Generator:
+    """运行带PDF分析的示例 - 流式版本"""
     print("="*60)
     print("🏢 财务报表PDF分析示例")
     print("="*60)
@@ -584,139 +584,53 @@ def main_with_pdf(code: str):
     # 创建 agent
     agent, system_message = create_financial_agent()
     
-    # PDF文件路径
-    pdf_path = "./603899_20250828_YMYG.pdf"
-    
-    # 测试查询（拆分为更简单的步骤，避免过度工具调用）
+    # 测试查询
     test_queries = [
-        f"请加载这个PDF文件：{pdf_path}",  # 只要求加载
-        "从PDF中提取所有关键财务数据",      # 只要求提取
-        "基于提取的数据，分析这家公司的整体财务状况",  # 要求分析
+        f"请加载这个PDF文件：{pdf_path}",
+        "从PDF中提取所有关键财务数据",
+        "基于提取的数据，分析这家公司的整体财务状况",
     ]
     
     thread_id = "pdf_analysis_session"
     config = {
         "configurable": {"thread_id": thread_id},
-        "recursion_limit": 100000  # 增加递归限制
+        "recursion_limit": 100000
     }
     
     for i, query in enumerate(test_queries, 1):
-        print(f"\n{'='*60}")
-        print(f"📝 问题 {i}: {query}")
-        print(f"{'='*60}\n")
-        
         # 第一次对话时包含系统消息
         if i == 1:
             messages = [system_message, HumanMessage(content=query)]
         else:
             messages = [HumanMessage(content=query)]
-        
-        result = agent.invoke(
+
+        # 返回流
+        stream = agent.stream(
             {"messages": messages},
-            config=config
+            config=config,
+            stream_mode="values"
         )
         
-        # 显示回复
-        last_message = result['messages'][-1]
-        print(f"🤖 AI: {last_message.content}\n")
-
-
-def main_interactive():
-    """交互式财务分析模式"""
-    print("="*60)
-    print("🏢 财务报表分析智能体 - 交互模式")
-    print("="*60)
-    print("\n💡 提示:")
-    print("  - 输入 'exit' 或 'quit' 退出")
-    print("  - 输入 'clear' 清除对话历史")
-    print("  - 提供财务数据，AI 将帮您分析\n")
-    
-    # 创建 agent
-    agent, system_message = create_financial_agent()
-    
-    # 对话会话 ID
-    thread_id = "interactive_financial_session"
-    config = {
-        "configurable": {"thread_id": thread_id},
-        "recursion_limit": 50  # 增加递归限制
-    }
-    
-    # 标记是否是第一次对话
-    is_first_message = True
-    
-    while True:
-        try:
-            # 获取用户输入
-            user_input = input("👤 您: ").strip()
+        # 使用生成器逐个产生事件
+        for chunk in stream:
+            latest_message = chunk["messages"][-1]
             
-            if not user_input:
-                continue
-            
-            # 退出命令
-            if user_input.lower() in ['exit', 'quit', '退出']:
-                print("\n👋 再见！")
-                break
-            
-            # 清除历史命令
-            if user_input.lower() in ['clear', '清除']:
-                thread_id = f"financial_session_{os.urandom(4).hex()}"
-                config = {
-                    "configurable": {"thread_id": thread_id},
-                    "recursion_limit": 500  # 增加递归限制
+            if latest_message.content:
+                yield {
+                    "type": "message",
+                    "step": i,
+                    "content": latest_message.content
                 }
-                is_first_message = True
-                print("\n✨ 对话历史已清除\n")
-                continue
-            
-            # 构建消息列表（第一次对话时包含系统消息）
-            if is_first_message:
-                messages = [system_message, HumanMessage(content=user_input)]
-                is_first_message = False
-            else:
-                messages = [HumanMessage(content=user_input)]
-            
-            # 调用 agent
-            result = agent.invoke(
-                {"messages": messages},
-                config=config
-            )
-            
-            # 显示回复
-            last_message = result['messages'][-1]
-            print(f"\n🤖 AI: {last_message.content}\n")
-            
-        except KeyboardInterrupt:
-            print("\n\n👋 再见！")
-            break
-        except Exception as e:
-            print(f"\n❌ 错误: {e}\n")
-
-
-if __name__ == "__main__":
-    import sys
+            elif hasattr(latest_message, 'tool_calls') and latest_message.tool_calls:
+                tools = [tc['name'] for tc in latest_message.tool_calls]
+                yield {
+                    "type": "tool_call",
+                    "step": i,
+                    "tools": tools
+                }
     
-    # 根据命令行参数选择运行模式
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "interactive":
-            # 交互式对话模式
-            main_interactive()
-        elif sys.argv[1] == "pdf":
-            # PDF分析示例
-            main_with_pdf()
-        else:
-            print("❌ 未知的运行模式")
-            print("\n可用模式：")
-            print("  python index.py          - 运行基础示例")
-            print("  python index.py pdf      - 运行PDF分析示例")
-            print("  python index.py interactive - 交互式对话模式")
-    else:
-        # 默认：运行示例测试
-        main()
-    
-    # 提示：如何运行其他模式
-    if len(sys.argv) == 1:
-        print("\n" + "="*60)
-        print("💡 运行模式提示：")
-        print("  python index.py pdf         - 运行PDF财报分析示例")
-        print("  python index.py interactive - 进入交互式对话模式")
-        print("="*60)
+    # 分析完成
+    yield {
+        "type": "complete",
+        "message": "分析完成"
+    }

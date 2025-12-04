@@ -16,4 +16,5 @@ torch>=2.0.0  # sentence-transformers 依赖
 
 # 其他工具
 python-dotenv>=1.0.0
+supabase>=1.0.0
 

@@ -32,7 +32,7 @@ def shanghai_browser(page,searchWord):
             print("点击搜索按钮成功")
             
             # 等待搜索结果加载
-            # page.wait_for_load_state('networkidle')
+            page.wait_for_load_state('networkidle')
 
             # 等待至少一个链接元素出现
             page.wait_for_timeout(2000)
@@ -49,11 +49,12 @@ def shanghai_browser(page,searchWord):
                 text = link.inner_text()
                 href = link.get_attribute('href')
                 res.append({
-                    'name': f"{searchWord}{text}",
-                    'url': f"https://static.sse.com.cn{href}"
+                    'company_name': f"{searchWord}{text}",
+                    'file_url': f"https://static.sse.com.cn{href}"
                 })
                 print(f"链接 {i + 1}: {text}")
                 print(f"链接地址: {href}\n")
+            return res
 
     except Exception as e:
         print(f"发生错误: {e}")

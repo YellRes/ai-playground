@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
-from shanghai import shanghai_browser
-from beijing import beijing_browser
-from shengzhen import shengzhen_browser
+from .shanghai import shanghai_browser
+from .beijing import beijing_browser
+from .shengzhen import shengzhen_browser
 
 def run_browser(exchange_code, stock_code, fiscal_year, period_type):
     res = []
@@ -13,11 +13,11 @@ def run_browser(exchange_code, stock_code, fiscal_year, period_type):
         page = browser.new_page()
         match exchange_code:
             case 'SH':
-                res = shanghai_browser(page, stock_code, fiscal_year, period_type)
+                res = shanghai_browser(page, stock_code)
             case 'SZ':
-                res = shengzhen_browser(page, stock_code, fiscal_year, period_type)
+                res = shengzhen_browser(page, stock_code)
             case 'BJ':
-                res = beijing_browser(page, stock_code, fiscal_year, period_type)
+                res = beijing_browser(page, stock_code)
             case _:
                 raise ValueError(f"不支持的交易所: {exchange_code}")
    
