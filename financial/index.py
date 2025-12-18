@@ -20,102 +20,79 @@ logging.basicConfig(
 def main(exchange_code, stock_code, fiscal_year, company_name = '', period_type = 3) -> Generator:
     """
     主函数 - 返回生成器用于流式处理
+    优化后的事件流：只保留关键节点，减少冗余事件
     """
     try:
-        # 1. 股票信息
-        logging.info(f"开始处理: exchange_code={exchange_code}, stock_code={stock_code}, fiscal_year={fiscal_year}")
-        yield {
-            "status": "progress",
-            "step": "init",
-            "message": f"开始处理: {exchange_code}-{stock_code}"
-        }
-        
+        # 1. 初始化并查询数据库
         fiscal_year = datetime.now().year
         period_type = (datetime.now().month - 1) // 3 + 1
-        logging.info(f"当前财年: {fiscal_year}, 季度: {period_type}")
+        logging.info(f"开始处理: exchange_code={exchange_code}, stock_code={stock_code}, fiscal_year={fiscal_year}, 季度={period_type}")
         
-        # 2. 查询数据库
-        logging.info("正在查询数据库...")
         yield {
             "status": "progress",
-            "step": "search_db",
-            "message": "正在查询数据库..."
+            "step": "query",
+            "message": f"正在查询 {exchange_code}-{stock_code} 的财务数据..."
         }
         
         file = search_SQL(exchange_code, stock_code, fiscal_year, period_type)
-        logging.info(f'file: {file}')
+        logging.info(f'数据库查询结果: {file}')
         
-        # 2.1 如果没有内容，爬取数据
+        # 2. 如果数据库没有数据，爬取网站
         if not file:
-            logging.info("数据库中无内容，启动浏览器爬取...")
+            logging.info("数据库中无数据，启动浏览器爬取...")
             yield {
                 "status": "progress",
                 "step": "crawl",
-                "message": "数据库中无内容，启动浏览器爬取..."
+                "message": "数据库中无数据，正在爬取财务报表（可能需要10-30秒）..."
             }
             
             file = run_browser(exchange_code, stock_code, fiscal_year, period_type)
-            logging.info(f"爬取完成，保存数据: {file}")
-            
-            yield {
-                "status": "progress",
-                "step": "save",
-                "message": "保存爬取数据到数据库..."
-            }
-            
             save_company_info(file[0]['file_url'], exchange_code, stock_code, fiscal_year, period_type, file[0]['company_name'])
+            logging.info(f"爬取并保存完成: {file[0]['company_name']}")
         else:
-            logging.info(f"从数据库获取文件: {file}")
-            yield {
-                "status": "progress",
-                "step": "search_db_success",
-                "message": f"从数据库获取文件: {file[0]['company_name']}"
-            }
+            logging.info(f"从数据库获取: {file[0]['company_name']}")
         
-        # 3. 下载文件
-        logging.info(f"开始下载文件: {file[0]['company_name']}")
+        # 3. 下载PDF文件
+        company_name = file[0]['company_name']
+        logging.info(f"开始下载PDF: {company_name}")
         yield {
             "status": "progress",
             "step": "download",
-            "message": f"开始下载文件: {file[0]['company_name']}"
+            "message": f"正在下载 {company_name} 的财务报表..."
         }
         
-        auth_download(file[0]['file_url'], file[0]['company_name'])
-        logging.info("文件下载完成")
-        
-        yield {
-            "status": "progress",
-            "step": "download_complete",
-            "message": "文件下载完成"
-        }
+        auth_download(file[0]['file_url'], company_name)
+        logging.info("PDF下载完成")
 
-        # 4. AI分析
-        logging.info(f"开始分析PDF: {file[0]['company_name']}")
+        # 4. AI分析PDF（流式输出）
+        logging.info(f"开始AI分析: {company_name}")
         yield {
             "status": "progress",
-            "step": "analyze",
-            "message": f"开始分析PDF: {file[0]['company_name']}"
+            "step": "analyze_start",
+            "message": f"开始AI分析 {company_name} 的财务报表..."
         }
         
-        pdf_path = f'../pdf/{file[0]["company_name"]}.pdf'
+        pdf_path = f'../pdf/{company_name}.pdf'
         
-        # 使用 main_with_pdf 进行流式分析
+        # 流式输出AI分析结果
         for analysis_chunk in main_with_pdf(pdf_path):
             yield {
-                "status": "progress",
-                "step": "analysis",
+                "status": "analyzing",
+                "step": "analysis_stream",
                 "data": analysis_chunk
             }
         
-        logging.info("PDF分析完成")
+        # 5. 分析完成
+        logging.info("财务报表分析完成")
         yield {
             "status": "complete",
             "message": "财务报表分析完成",
             "data": {
-                "company_name": file[0]['company_name'],
+                "company_name": company_name,
                 "exchange_code": exchange_code,
                 "stock_code": stock_code,
-                "fiscal_year": fiscal_year
+                "fiscal_year": fiscal_year,
+                "period_type": period_type
             }
         }
         
