@@ -20,6 +20,11 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 
+# 获取当前脚本所在目录的绝对路径
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# PDF 保存目录（相对于脚本位置的上级目录中的 pdf 文件夹）
+PDF_DIR = os.path.join(SCRIPT_DIR, '..', 'pdf')
+
 
 # 设置控制台编码为 UTF-8（修复 Windows 下的编码问题）
 if sys.platform.startswith('win'):

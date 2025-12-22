@@ -9,12 +9,18 @@ from db.save_company_info import save_company_info
 from db.search_SQL import search_SQL
 from datetime import datetime
 import logging
+import asyncio
+import os
 
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PDF_DIR = os.path.join(SCRIPT_DIR, 'pdf')
+
 
 
 def main(exchange_code, stock_code, fiscal_year, company_name = '', period_type = 3) -> Generator:
@@ -72,14 +78,15 @@ def main(exchange_code, stock_code, fiscal_year, company_name = '', period_type 
             "message": f"开始AI分析 {company_name} 的财务报表..."
         }
         
-        pdf_path = f'../pdf/{company_name}.pdf'
+
+        pdf_path = os.path.join(PDF_DIR, f"{company_name}.pdf")
         
         # 流式输出AI分析结果
         for analysis_chunk in main_with_pdf(pdf_path):
             yield {
                 "status": "analyzing",
                 "step": "analysis_stream",
-                "data": analysis_chunk
+                "data": analysis_chunk.get("content", "")
             }
         
         # 5. 分析完成
@@ -104,12 +111,16 @@ def main(exchange_code, stock_code, fiscal_year, company_name = '', period_type 
         }
 
 
+def main_async():
+    for chunk in main('SZ', '002100', 2025):
+       print(chunk, end="", flush=True)
+
 if __name__ == "__main__":
     logging.info("=" * 50)
     logging.info("开始执行财务报表分析系统")
     logging.info("=" * 50)
     try:
-        main('SH', '601127', 2025)
+        main_async()
         logging.info("=" * 50)
         logging.info("执行完成")
         logging.info("=" * 50)

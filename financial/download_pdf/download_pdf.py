@@ -1,6 +1,13 @@
 import requests
 import time
 import json
+import os
+
+# 获取当前脚本所在目录的绝对路径
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# PDF 保存目录（相对于脚本位置的上级目录中的 pdf 文件夹）
+PDF_DIR = os.path.join(SCRIPT_DIR, '..', 'pdf')
+
 # 从 cookie.json 文件加载 cookies
 def load_cookies_from_file(file_path):
     with open(file_path, "r", encoding='utf-8') as f:
@@ -36,7 +43,10 @@ def download_pdf(url, filename):
         parsed_cookies = load_cookies_from_file("./cookie.json")
         response = requests.get(url, headers=custom_headers, cookies=parsed_cookies)
         # 以二进制写模式打开文件
-        with open(f"../pdf/{filename}.pdf", 'wb') as file:
+        # 确保 pdf 目录存在
+        os.makedirs(PDF_DIR, exist_ok=True)
+        pdf_path = os.path.join(PDF_DIR, f"{filename}.pdf")
+        with open(pdf_path, 'wb') as file:
             # 分块写入，避免大文件占用过多内存
             # for chunk in response.iter_content(chunk_size=8192):
             file.write(response.content)

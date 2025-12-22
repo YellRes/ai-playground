@@ -69,7 +69,7 @@ def shengzhen_browser(page, searchWord):
     res = []
     res.append({
         'company_name': company_name,
-        'file_url': pdf_url
+        'file_url': pdf_url.replace('/download', '')
     })
     print(f"获取到的链接: {res}")
     return res
