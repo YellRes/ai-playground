@@ -24,6 +24,13 @@ class FinancialRequest(BaseModel):
 def read_root():
     return {"message": "财务报表分析系统 API"}
 
+@app.get("/get_company_info")
+def get_company_info():
+    url = "http://www.cninfo.com.cn/new/data/szse_stock.json"
+    response = requests.get(url)
+    data = response.json()
+    return data
+
 @app.post("/analyze")
 def analyze_financial_report(request: FinancialRequest):
     """

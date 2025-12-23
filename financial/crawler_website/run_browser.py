@@ -11,6 +11,11 @@ def run_browser(exchange_code, stock_code, fiscal_year, period_type):
         
         # 创建新页面
         page = browser.new_page()
+        
+        # 设置全局超时时间（毫秒）
+        page.set_default_timeout(60000)  # 所有操作默认 60 秒
+        page.set_default_navigation_timeout(60000)  # 导航操作默认 60 秒
+        
         match exchange_code:
             case 'SH':
                 res = shanghai_browser(page, stock_code)
